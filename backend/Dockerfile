@@ -1,15 +1,18 @@
-# Use an official Python runtime as a parent image
+# Specify the base image
+FROM python:3.12-slim
 
-# Set the working directory in the container
+# Create the working directory
+WORKDIR /backend
 
-# Copy the current directory contents into the container at /app
+# Copy the backend code to the working directory, and install the dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Install any needed packages specified in requirements.txt
+# Copy the rest of the backend code to the working directory
+COPY . .
 
-# Make port 5000 available to the world outside this container
+# Expose port 5000 for the backend
+EXPOSE 5000
 
-# Define environment variable
-
-# Run app.py when the container launches
-
-# End of File
+# Start the Flask Dev Server when the container launches
+CMD ["python3", "app.py"]
