@@ -1,0 +1,77 @@
+name: CI/CD Pipeline for Calculator App
+
+# Define triggers for the workflow
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  # Job for building and testing the frontend
+  # Ensures the code builds and runs correctly before creating the Docker image, or committing resources to containerization.
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 23
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: ./frontend
+
+      - name: Build React app
+        run: npm run build
+        working-directory: ./frontend
+
+  # Job for building and testing the backend
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.10
+
+      - name: Install dependencies
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install -r backend/requirements.txt
+
+  # Job for building and pushing Docker images
+  docker:
+    needs: [frontend, backend]  # Ensure frontend and backend complete first
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Docker
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push frontend image
+        run: |
+          docker build -t calculator-frontend ./frontend
+          docker push calculator-frontend
+
+      - name: Build and push backend image
+        run: |
+          docker build -t calculator-backend ./backend
+          docker push calculator-backend
